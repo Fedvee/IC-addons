@@ -1,0 +1,9 @@
+{
+    "Name": "AzakaQWE",
+    "Version": "v0.0.1",
+    "Includes": "IC_AzakaQWE_Component.ahk",
+    "Author": "Fedv/Fedvee and Ismo/Pneumatus",
+    "Url": "https://github.com/Pneumatus/IC-Addons/tree/main/IC_AzakaQWE_Extra",
+    "Info": "Q: GFslot3/Freely, W: GFslot3/Gazrick, E: Slot3NotOminNotEmpty/Freely. Addon switches to E if contracts are fulfilled before ultimates are all ready. Addon switches to W for specified number of seconds after ulting. If you don't use Omin then ult on -1 contracts fulfilled.",
+    "Dependencies": {}
+}
