@@ -15,13 +15,13 @@ Gui, ICScriptHub:Add, Text, x15 y+5, the configured amount of time before swappi
 
 if ( g_AzakaQWESettings.NumContracts == "" )
     g_AzakaQWESettings.NumContracts := 95
-Gui, ICScriptHub:Add, Text, x15 y+15, Ult. on this many Contracts Fulfilled:
+Gui, ICScriptHub:Add, Text, x15 y+15, Ult on this many contracts fulfilled (suggestion: 0 for Mehen, 97 for Omin)
 Gui, ICScriptHub:Add, Edit, vAzakaQWE_Contracts x+5 w50, % g_AzakaQWESettings.NumContracts
 Gui, ICScriptHub:Add, Text, x+5 vAzakaQWE_Contracts_Saved w200, % "Saved value: " . g_AzakaQWESettings.NumContracts
 
 if ( g_AzakaQWESettings.Loops == "" )
     g_AzakaQWESettings.Loops := 5
-Gui, ICScriptHub:Add, Text, x15 y+15, Ult. this many times:
+Gui, ICScriptHub:Add, Text, x15 y+15, Ult this many times (suggestion: 1 for event/TG/Tiamat, 7 for main campaigns) :
 Gui, ICScriptHub:Add, Edit, vAzakaQWE_Loops x+5 w50, % g_AzakaQWESettings.Loops
 Gui, ICScriptHub:Add, Text, x+5 vAzakaQWE_Loops_Saved w200, % "Saved value: " . g_AzakaQWESettings.Loops
 
@@ -42,11 +42,11 @@ loop, 10
     Gui, ICScriptHub:Add, Text, x+5 vAzakaQWE_CB%A_Index%_Saved w200, % chk == 1 ? "Saved value: Checked":"Saved value: Unchecked"
 }
 
-if ( g_AzakaQWESettings.SwapWDurationSecs == "" )
-    g_AzakaQWESettings.SwapWDurationSecs := 0
-Gui, ICScriptHub:Add, Text, x15 y+15, Swap to W for this many seconds after ults:
-Gui, ICScriptHub:Add, Edit, vAzakaQWE_SwapWDurationSecs x+5 w50, % g_AzakaQWESettings.SwapWDurationSecs
-Gui, ICScriptHub:Add, Text, x+5 vAzakaQWE_SwapWDurationSecs_Saved w200, % "Saved value: " . g_AzakaQWESettings.SwapWDurationSecs
+if ( g_AzakaQWESettings.msPerContract == "" )
+    g_AzakaQWESettings.msPerContract := 0
+Gui, ICScriptHub:Add, Text, x15 y+15, milliseconds per contract (higher reduces lag, lower reduces mistakes):
+Gui, ICScriptHub:Add, Edit, vAzakaQWE_msPerContract x+5 w50, % g_AzakaQWESettings.msPerContract
+Gui, ICScriptHub:Add, Text, x+5 vAzakaQWE_msPerContract_Saved w200, % "Saved value: " . g_AzakaQWESettings.msPerContract
 
 Gui, ICScriptHub:Add, Button, x15 y+10 w160 gAzakaQWE_Save, Save Settings
 Gui, ICScriptHub:Add, Button, x15 y+10 w160 gAzakaQWE_Run, Run
@@ -55,7 +55,7 @@ Gui, ICScriptHub:Add, Text, x15 y+10 vAzakaQWE_Running w300,
 Gui, ICScriptHub:Add, Text, x15 y+5 vAzakaQWE_CurrentContracts w300,
 Gui, ICScriptHub:Add, Text, x15 y+5 vAzakaQWE_CurrentUltStatus w300,
 Gui, ICScriptHub:Add, Text, x15 y+5 vAzakaQWE_UltsUsed w300,
-Gui, ICScriptHub:Add, Text, x15 y+5 vAzakaQWE_popping w300,
+Gui, ICScriptHub:Add, Text, x15 y+5 vAzakaQWE_debug w300,
 
 AzakaQWE_Save()
 {
@@ -73,8 +73,8 @@ AzakaQWE_Save()
         GuiControl, ICScriptHub:, AzakaQWE_CB%A_Index%_Saved, % AzakaQWE_CB%A_Index% == 1 ? "Saved value: Checked":"Saved value: Unchecked"
     }
 
-    g_AzakaQWESettings.SwapWDurationSecs := AzakaQWE_SwapWDurationSecs
-    GuiControl, ICScriptHub:, AzakaQWE_SwapWDurationSecs_Saved, % "Saved value: " . g_AzakaQWESettings.SwapWDurationSecs
+    g_AzakaQWESettings.msPerContract := AzakaQWE_msPerContract
+    GuiControl, ICScriptHub:, AzakaQWE_msPerContract_Saved, % "Saved value: " . g_AzakaQWESettings.msPerContract
 
     g_SF.WriteObjectToJSON(A_LineFile . "\..\Settings.json" , g_AzakaQWESettings)
 }
@@ -93,8 +93,8 @@ AzakaQWE_Run()
     guiData.guiName := "ICScriptHub:"
     guiData.guiControlIDcont := "AzakaQWE_CurrentContracts"
     guiData.guiControlIDultStatus := "AzakaQWE_CurrentUltStatus"
-    guiData.guiControlIDpopping := "AzakaQWE_popping"
     guiData.guiControlIDults := "AzakaQWE_UltsUsed"
+    guiData.guiControlIDdebug := "AzakaQWE_debug"
 
     azaka := new AzakaQWEFarm(g_AzakaQWESettings, guiData)
     azaka.Run()
@@ -103,7 +103,7 @@ AzakaQWE_Run()
     GuiControl, ICScriptHub:, AzakaQWE_CurrentContracts,
     GuiControl, ICScriptHub:, AzakaQWE_CurrentUltStatus,
     GuiControl, ICScriptHub:, AzakaQWE_UltsUsed,
-    GuiControl, ICScriptHub:, AzakaQWE_popping,
+    GuiControl, ICScriptHub:, AzakaQWE_debug,
     msgbox, Azaka farm is complete.
 }
 
@@ -118,25 +118,24 @@ class AzakaQWEFarm
     {
         loop, 10
         {
-            if (settings.Ult[A_Index] AND A_Index < 10)
-                this.inputs.Push(A_Index . "")
-            else if (settings.Ult[A_Index] AND A_Index == 10)
-                this.inputs.Push(0 . "")
-
-            if (settings.Ult[A_Index])
+            if (settings.Ult[A_Index]) {
+	        ultKey := mod(A_Index,10)    
+                this.inputs.Push(ultKey . "")
                 this.ultIndexes.Push(A_Index - 1)
+	    }
+	    this.AzakaUltKey := ultKey ; this works because Azaka is in the last seat. If CNE moves Azaka or creates a 13th seat changes may be needed
         }
         this.loops := settings.Loops
         this.numContracts := settings.NumContracts
-        this.swapWDurationSecs := g_AzakaQWESettings.SwapWDurationSecs
+        this.msPerContract := g_AzakaQWESettings.msPerContract
         if IsObject(guiData)
         {
             this.useGUI := true
             this.guiName := guiData.guiName
             this.guiControlIDcont := guiData.guiControlIDcont
             this.guiControlIDultStatus := guiData.guiControlIDultStatus
-            this.guiControlIDpopping := guiData.guiControlIDpopping
             this.guiControlIDults := guiData.guiControlIDults
+            this.guiControlIDdebug := guiData.guiControlIDdebug
         }
         return this
     }
@@ -149,13 +148,9 @@ class AzakaQWEFarm
         loops := this.Loops
         loop, %loops%
         {
-            wait := true
-            while wait
-            {
-                if this.farm()
-                    wait := false
-                sleep, 100
-            }
+	    while !this.farm() {
+	        sleep 100
+	    }
             if (this.useGUI)
                 GuiControl, % this.guiName, % this.guiControlIDults, % "Ultimates Used: " . A_Index
         }
@@ -164,11 +159,17 @@ class AzakaQWEFarm
     farm()
     {
         g_SF.Memory.ActiveEffectKeyHandler.Refresh()
-        num := ActiveEffectKeySharedFunctions.Omin.OminContractualObligationsHandler.ReadNumContractsFulfilled()
-	num := max(num,0)
+	this.oldnum := this.num
+        this.num := ActiveEffectKeySharedFunctions.Omin.OminContractualObligationsHandler.ReadNumContractsFulfilled()
+	if ((this.num == "") OR (this.num < 0)) {
+	    this.num := 0
+	}
+	if (this.oldnum == "") {
+	    this.oldnum := this.num
+        }
 
 	if (this.useGUI)
-            GuiControl, % this.guiName, % this.guiControlIDcont, % "Current No. Contracts Fulfilled: " . num
+            GuiControl, % this.guiName, % this.guiControlIDcont, % "Contracts Fulfilled: " . this.num
 
 	allUltsReady := this.areAllUltsReady()
 	if (this.useGUI) {
@@ -177,48 +178,71 @@ class AzakaQWEFarm
 
 	allUltsOnCD := this.areAllUltsOnCooldown()
 
-	if (this.useGUI)
-            GuiControl, % this.guiName, % this.guiControlIDpopping, % "popping ults: " . this.popping
+ 	this.AzakaCD := this.readUltimateCooldownByItem(this.AzakaUltKey)
+ 	if (this.useGUI) {
+ 	    GuiControl, % this.guiName, % this.guiControlIDdebug, % "Azaka CD: " . this.AzakaCD
+	}
 
-	if (!this.popping AND (num < this.numContracts)) {
- 	    g_SF.DirectedInput(,,["{q}"]*)	    
-	    sleep, (this.numContracts - num) * 20
+	; Five mutually exclusive and exhaustive cases are considered below
+
+	if (!this.popping AND (this.num < this.numContracts)) { ; wait for contracts to be fulfilled
+	    if (this.oldnum == this.num) {
+ 	        g_SF.DirectedInput(,,["{q}"]*)
+	    }
+	    if (this.num <= this.numContracts - 3) {
+	        sleep, max(0, (this.numContracts - this.num) * this.msPerContract * 3/4 - 100)
+	    }
+	    return false
+	}	
+
+	if (!this.popping AND !(this.num < this.numContracts) AND !allUltsReady) { ; swap out Omin
+	    if (this.numContracts > 0) { ; don't swap to E formation for Mehen
+		if (this.oldnum != this.num) {
+		    g_SF.DirectedInput(,,["{e}"]*)
+		}
+	    }
 	    return false
 	}
 
-	if (!this.popping AND (num >= this.numContracts) AND !allUltsReady) {
-	    g_SF.DirectedInput(,,["{e}"]*)
-	    return false
-	}
-
-	if (!this.popping AND (num >= this.numContracts) AND allUltsReady) {
+	if (!this.popping AND !(this.num < this.numContracts) AND allUltsReady) { ; start popping ultimates
 	    this.popping := 1
  	    g_SF.DirectedInput(,, this.inputs*)
- 	    g_SF.DirectedInput(,,["{q}"]*)
+	    if (this.oldnum == this.num) {
+ 	        g_SF.DirectedInput(,,["{q}"]*)
+	    }
 	    return false
 	}
-	if (this.popping AND !allUltsOnCD) {
+	
+	if (this.popping AND !allUltsOnCD) { ; continue popping ultimates
 	    g_SF.DirectedInput(,, this.inputs*)
- 	    g_SF.DirectedInput(,,["{q}"]*)
+	    if (this.oldnum == this.num) {
+ 	        g_SF.DirectedInput(,,["{q}"]*)
+	    }
 	    return false
 	}
 
-	if (this.popping AND allUltsOnCD) {
+	if (this.popping AND allUltsOnCD) { ; swap in Gazrick, wait for Azaka's ultimate to end, and then swap in Freely
 	    this.popping := 0
-	    if (this.swapWDurationSecs > 0) {
- 	        g_SF.DirectedInput(,,["{w}"]*)
-		sleep, this.swapWDurationSecs * 1000
- 		g_SF.DirectedInput(,,["{q}"]*)
+	    g_SF.DirectedInput(,,["{w}"]*)
+	    this.AzakaCD := this.readUltimateCooldownByItem(this.AzakaUltKey)
+	    if (this.useGUI)
+		GuiControl, % this.guiName, % this.guiControlIDdebug, % "Azaka CD: " . this.AzakaCD
+	    while (this.AzakaCD > 65.0) {
+		sleep, max(1, this.AzakaCD - 65.0) * 100
+		this.AzakaCD := this.readUltimateCooldownByItem(this.AzakaUltKey)
+		if (this.useGUI)
+		    GuiControl, % this.guiName, % this.guiControlIDdebug, % "Azaka CD: " . this.AzakaCD
 	    }
-	return true
+	    g_SF.DirectedInput(,,["{q}"]*)
+	    return true
 	}
     }
 
     areAllUltsReady()
     {
-        For index, value in this.ultIndexes
+        For index, ultkey in this.ultIndexes
         {
-            ultCd := this.readUltimateCooldownByItem(value)
+            ultCd := this.readUltimateCooldownByItem(ultkey)
             if (ultCd > 0)
                 return false ; any ult cd > 0 means they aren't all ready
         }
@@ -227,9 +251,9 @@ class AzakaQWEFarm
 
     areAllUltsOnCooldown()
     {
-        For index, value in this.ultIndexes
+        For index, ultkey in this.ultIndexes
         {
-            ultCd := this.readUltimateCooldownByItem(value)
+            ultCd := this.readUltimateCooldownByItem(ultkey)
             if (ultCd <= 0)
                 return false ; any ult cd <= 0 means it's not on cd
         }

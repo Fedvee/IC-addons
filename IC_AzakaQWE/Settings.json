@@ -1,7 +1,8 @@
 {
-	"Loops":13,
-	"NumContracts":96,
-	"SwapWDurationSecs":6,
+	"Loops":15,
+	"msPerContract":150,
+	"NumContracts":98,
+	"SwapWDurationSecs":1,
 	"Ult":[
 		1,
 		0,
