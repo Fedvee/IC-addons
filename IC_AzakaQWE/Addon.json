@@ -1,9 +1,0 @@
-{
-    "Name": "AzakaQWE",
-    "Version": "v0.0.4",
-    "Includes": "IC_AzakaQWE_Component.ahk",
-    "Author": "Fedv/Fedvee (based on BetterAzaka v0.0.1 by Ismo/Pneumatus)",
-    "Url": "https://github.com/Fedvee/IC-Addons/tree/main/IC_AzakaQWE",
-    "Info": "Q: GFslot3/Freely, W: GFslot3/Gazrick, E: Slot3NotOminNotEmpty/Freely. Addon switches to E if contracts are fulfilled before ultimates are all ready. Addon switches to W while Azaka's ult is active. Specify 0 contracts for Omin. To reduce lag, the addon sleeps for time proportional to the number of contracts remaining.",
-    "Dependencies": {}
-}
